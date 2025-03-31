@@ -1,0 +1,57 @@
+# Ignore ALL node_modules directories at any level
+**/node_modules/
+
+# Specific environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Build directories
+build/
+dist/
+.next/
+out/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+coverage/
+.nyc_output/
+jest*.config.js
+
+# Frontend specific
+.eslintcache
+.cache/
+
+# Backend specific
+*.pid
+*.seed
+
+# MongoDB
+*.ns
+*.lock
+*.tmp
+*.wt
+
+# Optional
+*.tsbuildinfo
