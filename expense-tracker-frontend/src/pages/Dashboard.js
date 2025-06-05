@@ -1,5 +1,4 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
   Box, 
   Typography, 
@@ -33,7 +32,6 @@ import {
 import { ExpenseContext } from '../context/ExpenseContext';
 import { AuthContext } from '../context/AuthContext';
 import ExpenseChart from '../components/ExpenseChart';
-import { format } from 'date-fns';
 
 const Dashboard = () => {
   const { 
@@ -45,14 +43,13 @@ const Dashboard = () => {
     error 
   } = useContext(ExpenseContext);
   const { logout, user } = useContext(AuthContext);
-  const navigate = useNavigate();
-  
+
   const [newExpense, setNewExpense] = useState({
     title: '',
     amount: '',
     type: 'expense',
     category: 'Food',
-    date: format(new Date(), 'yyyy-MM-dd')
+    date: new Date().toISOString().split('T')[0] // Format as YYYY-MM-DD
   });
   
   const [editExpense, setEditExpense] = useState(null);
@@ -93,6 +90,15 @@ const Dashboard = () => {
     }
   }, [error]);
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   const handleChange = (e) => {
     setNewExpense({ ...newExpense, [e.target.name]: e.target.value });
   };
@@ -111,7 +117,7 @@ const Dashboard = () => {
         amount: '',
         type: 'expense',
         category: 'Food',
-        date: format(new Date(), 'yyyy-MM-dd')
+        date: new Date().toISOString().split('T')[0]
       });
     }
   };
@@ -119,7 +125,7 @@ const Dashboard = () => {
   const handleEditClick = (expense) => {
     setEditExpense({
       ...expense,
-      date: format(new Date(expense.date), 'yyyy-MM-dd')
+      date: expense.date.split('T')[0] // Format as YYYY-MM-DD
     });
     setOpenEditDialog(true);
   };
@@ -328,7 +334,7 @@ const Dashboard = () => {
                       backgroundColor: expense.type === 'income' ? 'rgba(76, 175, 80, 0.08)' : 'rgba(244, 67, 54, 0.08)'
                     }}
                   >
-                    <TableCell>{format(new Date(expense.date), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell>{formatDate(expense.date)}</TableCell>
                     <TableCell>{expense.title}</TableCell>
                     <TableCell sx={{ color: expense.type === 'income' ? 'success.main' : 'error.main' }}>
                       {expense.type === 'income' ? '+' : '-'}${expense.amount.toFixed(2)}
