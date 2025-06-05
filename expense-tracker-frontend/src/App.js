@@ -1,23 +1,34 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Box } from '@chakra-ui/react';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { AuthProvider } from './context/AuthContext';
 import Dashboard from './pages/Dashboard';
-import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import PrivateRoute from './components/PrivateRoute';
+import PrivateRoute from './components/common/PrivateRoute';
+
+const theme = createTheme();
 
 function App() {
   return (
-    <Router>
-      <Navbar />
-      <Routes>
-        <Route element={<PrivateRoute />}>
-          <Route path="/" element={<Dashboard />} />
-        </Route>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-      </Routes>
-    </Router>
+    <ThemeProvider theme={theme}>
+      <AuthProvider>
+        <Box minH="100vh" bg="gray.50">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/dashboard" element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            } />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </Box>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
+
 export default App;

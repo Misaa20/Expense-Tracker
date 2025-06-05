@@ -1,6 +1,6 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { TextField, Button, Container, Typography, Box } from '@mui/material';
 
 const Login = () => {
@@ -8,8 +8,14 @@ const Login = () => {
     email: '',
     password: '',
   });
-  const { login } = useContext(AuthContext);
+  const { login, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -17,10 +23,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { success } = await login(formData);
-    if (success) {
-      navigate('/');
-    }
+    await login(formData.email, formData.password);
   };
 
   return (
@@ -29,6 +32,11 @@ const Login = () => {
         <Typography variant="h4" gutterBottom>
           Login
         </Typography>
+        {error && (
+          <Typography color="error" mb={2}>
+            {error}
+          </Typography>
+        )}
         <form onSubmit={handleSubmit}>
           <TextField
             fullWidth

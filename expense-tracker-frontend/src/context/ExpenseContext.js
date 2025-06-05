@@ -1,82 +1,135 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import API from '../utils/api';
-import { AuthContext } from './AuthContext';
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { expenseService } from '../services/expenses';
+import { useAuth } from './AuthContext';
 
 const ExpenseContext = createContext();
 
-const ExpenseProvider = ({ children }) => {
-  const [expenses, setExpenses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { isAuthenticated } = useContext(AuthContext);
-
-  const getExpenses = async () => {
-    try {
-      setLoading(true);
-      const res = await API.get('/expenses');
-      setExpenses(res.data);
-      setLoading(false);
-    } catch (err) {
-      setError(err.response?.data?.msg || 'Error fetching expenses');
-      setLoading(false);
-    }
-  };
-
-  const addExpense = async (expense) => {
-    try {
-      const res = await API.post('/expenses', expense);
-      setExpenses([res.data, ...expenses]);
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.response?.data };
-    }
-  };
-
-  const updateExpense = async (id, updatedExpense) => {
-    try {
-      const res = await API.put(`/expenses/${id}`, updatedExpense);
-      setExpenses(
-        expenses.map((expense) =>
-          expense._id === id ? res.data : expense
+const expenseReducer = (state, action) => {
+  switch (action.type) {
+    case 'FETCH_EXPENSES_START':
+      return { ...state, loading: true, error: null };
+    case 'FETCH_EXPENSES_SUCCESS':
+      return { 
+        ...state, 
+        loading: false, 
+        expenses: action.payload.expenses,
+        pagination: action.payload.pagination
+      };
+    case 'FETCH_EXPENSES_ERROR':
+      return { ...state, loading: false, error: action.payload };
+    case 'ADD_EXPENSE':
+      return { 
+        ...state, 
+        expenses: [action.payload, ...state.expenses]
+      };
+    case 'UPDATE_EXPENSE':
+      return {
+        ...state,
+        expenses: state.expenses.map(expense =>
+          expense._id === action.payload._id ? action.payload : expense
         )
-      );
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.response?.data };
+      };
+    case 'DELETE_EXPENSE':
+      return {
+        ...state,
+        expenses: state.expenses.filter(expense => expense._id !== action.payload)
+      };
+    case 'SET_STATS':
+      return { ...state, stats: action.payload };
+    default:
+      return state;
+  }
+};
+
+const initialState = {
+  expenses: [],
+  stats: null,
+  pagination: null,
+  loading: false,
+  error: null
+};
+
+export const ExpenseProvider = ({ children }) => {
+  const [state, dispatch] = useReducer(expenseReducer, initialState);
+  const { isAuthenticated } = useAuth();
+
+  // Fetch expenses when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchExpenses();
+      fetchStats();
+    }
+  }, [isAuthenticated]);
+
+  const fetchExpenses = async (params = {}) => {
+    dispatch({ type: 'FETCH_EXPENSES_START' });
+    try {
+      const data = await expenseService.getExpenses(params);
+      dispatch({ type: 'FETCH_EXPENSES_SUCCESS', payload: data });
+    } catch (error) {
+      dispatch({ type: 'FETCH_EXPENSES_ERROR', payload: error.message });
+    }
+  };
+
+  const addExpense = async (expenseData) => {
+    try {
+      const data = await expenseService.createExpense(expenseData);
+      dispatch({ type: 'ADD_EXPENSE', payload: data.expense });
+      fetchStats(); // Refresh stats
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const updateExpense = async (id, expenseData) => {
+    try {
+      const data = await expenseService.updateExpense(id, expenseData);
+      dispatch({ type: 'UPDATE_EXPENSE', payload: data.expense });
+      fetchStats(); // Refresh stats
+      return data;
+    } catch (error) {
+      throw error;
     }
   };
 
   const deleteExpense = async (id) => {
     try {
-      await API.delete(`/expenses/${id}`);
-      setExpenses(expenses.filter((expense) => expense._id !== id));
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.response?.data };
+      await expenseService.deleteExpense(id);
+      dispatch({ type: 'DELETE_EXPENSE', payload: id });
+      fetchStats(); // Refresh stats
+    } catch (error) {
+      throw error;
     }
   };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      getExpenses();
+  const fetchStats = async (period = 'month') => {
+    try {
+      const data = await expenseService.getExpenseStats(period);
+      dispatch({ type: 'SET_STATS', payload: data.stats });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
     }
-  }, [isAuthenticated]);
+  };
 
   return (
-    <ExpenseContext.Provider
-      value={{
-        expenses,
-        loading,
-        error,
-        addExpense,
-        updateExpense,
-        deleteExpense,
-        getExpenses,
-      }}
-    >
+    <ExpenseContext.Provider value={{
+      ...state,
+      fetchExpenses,
+      addExpense,
+      updateExpense,
+      deleteExpense,
+      fetchStats
+    }}>
       {children}
     </ExpenseContext.Provider>
   );
 };
 
-export { ExpenseContext, ExpenseProvider };
+export const useExpenses = () => {
+  const context = useContext(ExpenseContext);
+  if (!context) {
+    throw new Error('useExpenses must be used within an ExpenseProvider');
+  }
+  return context;
+};

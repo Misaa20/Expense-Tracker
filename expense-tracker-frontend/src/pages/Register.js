@@ -1,6 +1,6 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { TextField, Button, Container, Typography, Box } from '@mui/material';
 
 const Register = () => {
@@ -9,7 +9,7 @@ const Register = () => {
     email: '',
     password: '',
   });
-  const { register } = useContext(AuthContext);
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
