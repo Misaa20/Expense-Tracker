@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { TextField, Button, Container, Typography, Box } from '@mui/material';
+import {
+  Box,
+  Button,
+  Container,
+  FormControl,
+  FormLabel,
+  Input,
+  VStack,
+  Text,
+  Heading,
+  useToast
+} from '@chakra-ui/react';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +21,7 @@ const Login = () => {
   });
   const { login, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -27,44 +39,49 @@ const Login = () => {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box mt={5}>
-        <Typography variant="h4" gutterBottom>
-          Login
-        </Typography>
+    <Container maxW="sm" py={10}>
+      <VStack spacing={8} align="stretch">
+        <Heading size="lg">Login</Heading>
+        
         {error && (
-          <Typography color="error" mb={2}>
+          <Text color="red.500" mb={2}>
             {error}
-          </Typography>
+          </Text>
         )}
+        
         <form onSubmit={handleSubmit}>
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Password"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-          <Box mt={2}>
-            <Button type="submit" variant="contained" color="primary">
+          <VStack spacing={4}>
+            <FormControl isRequired>
+              <FormLabel>Email</FormLabel>
+              <Input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+              />
+            </FormControl>
+            
+            <FormControl isRequired>
+              <FormLabel>Password</FormLabel>
+              <Input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+              />
+            </FormControl>
+            
+            <Button
+              type="submit"
+              colorScheme="blue"
+              width="full"
+              mt={4}
+            >
               Login
             </Button>
-          </Box>
+          </VStack>
         </form>
-      </Box>
+      </VStack>
     </Container>
   );
 };
