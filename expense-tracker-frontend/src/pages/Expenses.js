@@ -28,7 +28,7 @@ import {
   Spinner,
   Center,
 } from '@chakra-ui/react';
-import axios from 'axios';
+import { expenseService } from '../services/expenses';
 import Header from '../components/common/Header';
 import Sidebar from '../components/common/Sidebar';
 import { useAuth } from '../context/AuthContext';
@@ -39,6 +39,7 @@ const Expenses = () => {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
   const [expenses, setExpenses] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   const [newExpense, setNewExpense] = useState({
     title: '',
@@ -50,8 +51,43 @@ const Expenses = () => {
     tags: [],
   });
 
-  const categories = ['Food', 'Transport', 'Entertainment', 'Bills', 'Shopping', 'Other'];
-  const paymentMethods = ['card', 'cash', 'bank transfer', 'other'];
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      setLoading(true);
+      try {
+        const data = await expenseService.getExpenses();
+        setExpenses(data.expenses);
+      } catch (error) {
+        toast({
+          title: 'Error fetching expenses',
+          description: error.message || 'Could not retrieve expenses.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchExpenses();
+  }, [toast]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setCategories([
+        { _id: '60d0fe4f5311236168a109ca', name: 'Food' },
+        { _id: '60d0fe4f5311236168a109cb', name: 'Transport' },
+        { _id: '60d0fe4f5311236168a109cc', name: 'Entertainment' },
+        { _id: '60d0fe4f5311236168a109cd', name: 'Bills' },
+        { _id: '60d0fe4f5311236168a109ce', name: 'Shopping' },
+        { _id: '60d0fe4f5311236168a109cf', name: 'Other' },
+      ]);
+    };
+
+    fetchCategories();
+  }, [toast]);
+
+  const paymentMethods = ['card', 'cash', 'bank_transfer', 'other'];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -65,23 +101,27 @@ const Expenses = () => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const response = await axios.post(
-        'http://localhost:5000/api/expenses',
-        {
-          ...newExpense,
-          amount: parseFloat(newExpense.amount),
-          tags: newExpense.tags.length > 0 ? newExpense.tags : ['general'],
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
+    if (!newExpense.category) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select a category.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      setLoading(false);
+      return;
+    }
 
-      setExpenses(prev => [...prev, response.data]);
+    try {
+      const response = await expenseService.createExpense({
+        ...newExpense,
+        amount: parseFloat(newExpense.amount),
+        date: newExpense.date ? new Date(newExpense.date).toISOString() : new Date().toISOString(),
+        tags: newExpense.tags.length > 0 ? newExpense.tags.map(t => t.trim()) : [],
+      });
+
+      setExpenses(prev => [...prev, response.expense]);
       
       toast({
         title: 'Expense added successfully',
@@ -150,19 +190,29 @@ const Expenses = () => {
                 </Tr>
               </Thead>
               <Tbody>
-                {expenses.map((expense) => (
-                  <Tr key={expense.id}>
-                    <Td>{expense.date}</Td>
-                    <Td>
-                      <Badge colorScheme={getCategoryColor(expense.category)}>
-                        {expense.category}
-                      </Badge>
+                {loading ? (
+                  <Tr>
+                    <Td colSpan="5">
+                      <Center p={10}>
+                        <Spinner />
+                      </Center>
                     </Td>
-                    <Td>{expense.description}</Td>
-                    <Td>{expense.paymentMethod}</Td>
-                    <Td isNumeric>${expense.amount.toFixed(2)}</Td>
                   </Tr>
-                ))}
+                ) : (
+                  expenses.map((expense) => (
+                    <Tr key={expense._id}>
+                      <Td>{new Date(expense.date).toLocaleDateString()}</Td>
+                      <Td>
+                        <Badge colorScheme={getCategoryColor(expense.category?.name)}>
+                          {expense.category?.name || 'Uncategorized'}
+                        </Badge>
+                      </Td>
+                      <Td>{expense.title}</Td>
+                      <Td>{expense.paymentMethod}</Td>
+                      <Td isNumeric>${expense.amount.toFixed(2)}</Td>
+                    </Tr>
+                  ))
+                )}
               </Tbody>
             </Table>
           </Box>
@@ -204,8 +254,8 @@ const Expenses = () => {
                         placeholder="Select category"
                       >
                         {categories.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
+                          <option key={category._id} value={category._id}>
+                            {category.name}
                           </option>
                         ))}
                       </Select>
@@ -249,11 +299,10 @@ const Expenses = () => {
                     </FormControl>
 
                     <Button
-                      type="submit"
+                      mt={4}
                       colorScheme="blue"
-                      width="full"
                       isLoading={loading}
-                      loadingText="Adding..."
+                      type="submit"
                     >
                       Add Expense
                     </Button>
