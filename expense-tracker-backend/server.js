@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 // Add this line with other route imports
 const expenseRoutes = require('./routes/expenses');
 const budgetRoutes = require('./routes/budgets');
+const categoryRoutes = require('./routes/categories');
 
 
 require('dotenv').config();
@@ -65,6 +66,7 @@ app.use('/api/auth', authRoutes);
 // Add this line with other route uses
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/budgets', budgetRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // Handle undefined routes
 app.all('*', (req, res) => {

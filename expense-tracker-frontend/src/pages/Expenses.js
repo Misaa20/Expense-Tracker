@@ -38,6 +38,7 @@ import {
 } from '@chakra-ui/react';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { expenseService } from '../services/expenses';
+import { categoryService } from '../services/categories';
 import Header from '../components/common/Header';
 import Sidebar from '../components/common/Sidebar';
 import { useAuth } from '../context/AuthContext';
@@ -98,16 +99,27 @@ const Expenses = () => {
     fetchExpenses();
   }, [toast]);
 
+  // Fetch real categories from the API
   useEffect(() => {
     const fetchCategories = async () => {
-      setCategories([
-        { _id: '60d0fe4f5311236168a109ca', name: 'Food' },
-        { _id: '60d0fe4f5311236168a109cb', name: 'Transport' },
-        { _id: '60d0fe4f5311236168a109cc', name: 'Entertainment' },
-        { _id: '60d0fe4f5311236168a109cd', name: 'Bills' },
-        { _id: '60d0fe4f5311236168a109ce', name: 'Shopping' },
-        { _id: '60d0fe4f5311236168a109cf', name: 'Other' },
-      ]);
+      try {
+        console.log('Fetching categories from API...');
+        const data = await categoryService.getCategories();
+        console.log('Categories fetched:', data.categories);
+        setCategories(data.categories || []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        toast({
+          title: 'Error fetching categories',
+          description: error.response?.data?.message || 'Could not retrieve categories.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        
+        // Fallback to empty array if API fails
+        setCategories([]);
+      }
     };
 
     fetchCategories();
@@ -147,6 +159,7 @@ const Expenses = () => {
     }
 
     try {
+      console.log('Creating expense with data:', newExpense);
       const response = await expenseService.createExpense({
         ...newExpense,
         amount: parseFloat(newExpense.amount),
@@ -154,6 +167,7 @@ const Expenses = () => {
         tags: newExpense.tags.length > 0 ? newExpense.tags.map(t => t.trim()) : [],
       });
 
+      console.log('Expense created:', response.expense);
       setExpenses(prev => [...prev, response.expense]);
       
       toast({
@@ -174,6 +188,7 @@ const Expenses = () => {
       });
       onClose();
     } catch (error) {
+      console.error('Error adding expense:', error);
       toast({
         title: 'Error adding expense',
         description: error.response?.data?.message || 'Something went wrong',
@@ -329,12 +344,14 @@ const Expenses = () => {
 
   const getCategoryColor = (categoryName) => {
     const colors = {
-      Food: 'green',
-      Transport: 'blue',
-      Entertainment: 'purple',
-      Bills: 'red',
-      Shopping: 'orange',
-      Other: 'gray'
+      'Food & Dining': 'green',
+      'Transportation': 'blue',
+      'Entertainment': 'purple',
+      'Bills & Utilities': 'red',
+      'Shopping': 'orange',
+      'Healthcare': 'pink',
+      'Education': 'yellow',
+      'Other': 'gray'
     };
     return colors[categoryName] || 'gray';
   };
@@ -370,6 +387,16 @@ const Expenses = () => {
               Add Expense
             </Button>
           </HStack>
+
+          {/* Show message if no categories are available */}
+          {categories.length === 0 && (
+            <Box bg="yellow.50" border="1px" borderColor="yellow.200" rounded="md" p={4} mb={4}>
+              <Text color="yellow.800">
+                No categories found. Categories are automatically created when you register. 
+                Please try refreshing the page or contact support if this issue persists.
+              </Text>
+            </Box>
+          )}
 
           <Box overflowX="auto">
             <Table variant="simple">
@@ -528,6 +555,7 @@ const Expenses = () => {
                       width="full"
                       isLoading={loading}
                       loadingText="Adding..."
+                      isDisabled={categories.length === 0}
                     >
                       Add Expense
                     </Button>
