@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Box, ChakraProvider } from '@chakra-ui/react';
+import { Box, ChakraProvider, ColorModeScript } from '@chakra-ui/react';
 import { AuthProvider } from './context/AuthContext';
 import Homepage from './pages/Homepage';
 import Dashboard from './pages/Dashboard';
@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import PrivateRoute from './components/common/PrivateRoute';
 import { useAuth } from './context/AuthContext';
+import theme from './theme';
 
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
@@ -67,13 +68,14 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <ChakraProvider>
-      <AuthProvider>
-        <Box minH="100vh" bg="gray.50">
+    <>
+      <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+      <ChakraProvider theme={theme}>
+        <AuthProvider>
           <AppRoutes />
-        </Box>
-      </AuthProvider>
-    </ChakraProvider>
+        </AuthProvider>
+      </ChakraProvider>
+    </>
   );
 }
 

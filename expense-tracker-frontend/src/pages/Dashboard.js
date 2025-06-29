@@ -19,6 +19,7 @@ import {
   Badge,
   HStack,
   Divider,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import Header from '../components/common/Header';
 import Sidebar from '../components/common/Sidebar';
@@ -34,6 +35,11 @@ const Dashboard = () => {
   const [budgets, setBudgets] = useState([]);
   const [recentExpenses, setRecentExpenses] = useState([]);
   const toast = useToast();
+
+  // Theme-aware colors
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const textColor = useColorModeValue('gray.800', 'white');
+  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   // Fetch all dashboard data
   useEffect(() => {
@@ -165,15 +171,15 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <Box>
+      <Box bg={bgColor} minH="100vh">
         <Header />
         <Flex>
           <Sidebar />
-          <Box flex={1} p={6} bg="gray.50">
+          <Box flex={1} p={6} bg={bgColor}>
             <Center h="400px">
               <VStack>
-                <Spinner size="xl" />
-                <Text>Loading dashboard...</Text>
+                <Spinner size="xl" color="blue.500" />
+                <Text color={textColor}>Loading dashboard...</Text>
               </VStack>
             </Center>
           </Box>
@@ -186,18 +192,18 @@ const Dashboard = () => {
   const expenseData = getExpenseChartData();
 
   return (
-    <Box>
+    <Box bg={bgColor} minH="100vh">
       <Header />
       <Flex>
         <Sidebar />
-        <Box flex={1} p={6} bg="gray.50">
+        <Box flex={1} p={6} bg={bgColor}>
           <HStack justify="space-between" mb={6}>
-            <Text fontSize="2xl" fontWeight="bold">
+            <Text fontSize="2xl" fontWeight="bold" color={textColor}>
               Dashboard
             </Text>
             <Badge colorScheme="green" p={2} borderRadius="md">
               {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long',
+                weekday: 'long', 
                 year: 'numeric', 
                 month: 'long', 
                 day: 'numeric' 
@@ -212,17 +218,20 @@ const Dashboard = () => {
             </Alert>
           )}
           
-          <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap={6} mb={6}>
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={6} mb={8}>
             {stats.map((stat, index) => (
               <GridItem key={index}>
                 <Card>
                   <Stat>
-                    <StatLabel color="gray.600">{stat.label}</StatLabel>
-                    <StatNumber color={`${stat.color}.500`} fontSize={{ base: 'lg', md: 'xl' }}>
+                    <StatLabel color={mutedTextColor} fontSize="sm">
+                      {stat.label}
+                    </StatLabel>
+                    <StatNumber fontSize="2xl" fontWeight="bold" color={`${stat.color}.500`}>
                       {stat.value}
                     </StatNumber>
-                    <StatHelpText color={stat.isPositive ? 'green.500' : 'red.500'}>
-                      <StatArrow type={stat.isPositive ? 'increase' : 'decrease'} />
+                    <StatHelpText display="flex" alignItems="center" color={mutedTextColor}>
+                      {stat.isPositive && <StatArrow type="increase" />}
+                      {!stat.isPositive && <StatArrow type="decrease" />}
                       {stat.change}
                     </StatHelpText>
                   </Stat>
@@ -231,7 +240,7 @@ const Dashboard = () => {
             ))}
           </Grid>
 
-          <Grid templateColumns={{ base: '1fr', xl: 'repeat(3, 1fr)' }} gap={6} mb={6}>
+          <Grid templateColumns={{ base: "1fr", xl: "repeat(3, 1fr)" }} gap={6} mb={6}>
             {/* Bar Chart */}
             <GridItem colSpan={{ base: 1, xl: 1 }}>
               <ExpenseChart data={expenseData} type="bar" />
@@ -245,11 +254,11 @@ const Dashboard = () => {
             {/* Recent Expenses */}
             <GridItem colSpan={{ base: 1, xl: 1 }}>
               <Card>
-                <Text fontSize="lg" fontWeight="semibold" mb={4}>
+                <Text fontSize="lg" fontWeight="semibold" mb={4} color={textColor}>
                   Recent Expenses
                 </Text>
                 {recentExpenses.length === 0 ? (
-                  <Text color="gray.500" textAlign="center" py={8}>
+                  <Text color={mutedTextColor} textAlign="center" py={8}>
                     No recent expenses
                   </Text>
                 ) : (
@@ -258,10 +267,10 @@ const Dashboard = () => {
                       <Box key={expense._id}>
                         <HStack justify="space-between">
                           <VStack align="start" spacing={0}>
-                            <Text fontWeight="medium" fontSize="sm">
+                            <Text fontWeight="medium" fontSize="sm" color={textColor}>
                               {expense.title}
                             </Text>
-                            <Text fontSize="xs" color="gray.500">
+                            <Text fontSize="xs" color={mutedTextColor}>
                               {expense.category?.name || 'No Category'}
                             </Text>
                           </VStack>
@@ -269,7 +278,7 @@ const Dashboard = () => {
                             <Text fontWeight="bold" color="red.500">
                               -${expense.amount.toFixed(2)}
                             </Text>
-                            <Text fontSize="xs" color="gray.500">
+                            <Text fontSize="xs" color={mutedTextColor}>
                               {new Date(expense.date).toLocaleDateString()}
                             </Text>
                           </VStack>
@@ -291,7 +300,7 @@ const Dashboard = () => {
                   <Card>
                     <VStack align="stretch" spacing={3}>
                       <HStack justify="space-between">
-                        <Text fontWeight="semibold" fontSize="md">
+                        <Text fontWeight="semibold" fontSize="md" color={textColor}>
                           {budget.name}
                         </Text>
                         <Badge 
@@ -306,7 +315,7 @@ const Dashboard = () => {
                       
                       <Box>
                         <HStack justify="space-between" mb={1}>
-                          <Text fontSize="sm" color="gray.600">
+                          <Text fontSize="sm" color={mutedTextColor}>
                             ${(budget.spentAmount || 0).toFixed(2)} of ${budget.amount.toFixed(2)}
                           </Text>
                         </HStack>
@@ -323,7 +332,7 @@ const Dashboard = () => {
                         </Box>
                       </Box>
                       
-                      <Text fontSize="xs" color="gray.500" textTransform="capitalize">
+                      <Text fontSize="xs" color={mutedTextColor} textTransform="capitalize">
                         {budget.period} • ${(budget.remainingAmount || 0).toFixed(2)} remaining
                       </Text>
                     </VStack>
