@@ -31,14 +31,8 @@ const Header = () => {
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const shadow = useColorModeValue('lg', 'dark-lg');
-  const logoGradient = useColorModeValue(
-    'linear(to-r, blue.500, purple.600)',
-    'linear(to-r, blue.300, purple.400)'
-  );
-  const logoTextShadow = useColorModeValue(
-    '0 2px 4px rgba(0,0,0,0.1)',
-    '0 2px 4px rgba(0,0,0,0.3)'
-  );
+  const logoColor = useColorModeValue('gray.800', 'white');
+  const logoAccentColor = useColorModeValue('blue.600', 'blue.400');
 
   const handleProfileClick = () => {
     navigate('/settings');
@@ -50,7 +44,11 @@ const Header = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
+  };
+
+  const handleLogoClick = () => {
+    navigate('/');
   };
 
   return (
@@ -68,23 +66,31 @@ const Header = () => {
     >
       <Flex justify="space-between" align="center">
         {/* Logo/Brand */}
-        <Box cursor="pointer" onClick={() => navigate('/dashboard')}>
-          <Text 
-            fontSize="3xl" 
-            fontWeight="900"
-            bgGradient={logoGradient}
-            bgClip="text"
-            textShadow={logoTextShadow}
-            fontFamily="'Poppins', 'Inter', sans-serif"
-            letterSpacing="-0.025em"
-            _hover={{
-              transform: 'scale(1.02)',
-              transition: 'transform 0.2s ease-in-out'
-            }}
-            transition="transform 0.2s ease-in-out"
-          >
-            💰 MoneyTrail
-          </Text>
+        <Box cursor="pointer" onClick={handleLogoClick}>
+          <HStack spacing={2} align="center">
+            <Text 
+              fontSize="2xl" 
+              fontWeight="700"
+              color={logoColor}
+              fontFamily="'SF Pro Display', 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif"
+              letterSpacing="-0.02em"
+              _hover={{
+                color: logoAccentColor,
+                transform: 'translateY(-1px)',
+                transition: 'all 0.2s ease-in-out'
+              }}
+              transition="all 0.2s ease-in-out"
+            >
+              MoneyTrail
+            </Text>
+            <Box
+              w="6px"
+              h="6px"
+              bg={logoAccentColor}
+              borderRadius="full"
+              opacity={0.8}
+            />
+          </HStack>
         </Box>
         
         {/* Right Side Actions */}
@@ -200,7 +206,6 @@ const Header = () => {
                 onClick={handleLogout}
                 fontSize="sm"
                 fontWeight="medium"
-                color="red.500"
                 _hover={{
                   bg: useColorModeValue('red.50', 'red.900'),
                   color: useColorModeValue('red.600', 'red.300')

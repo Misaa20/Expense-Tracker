@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Box,
@@ -10,7 +10,12 @@ import {
   Input,
   VStack,
   Heading,
-  useToast
+  useToast,
+  Text,
+  HStack,
+  Link,
+  Divider,
+  useColorModeValue
 } from '@chakra-ui/react';
 
 const Register = () => {
@@ -22,6 +27,9 @@ const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
+
+  const linkColor = useColorModeValue('blue.600', 'blue.400');
+  const textColor = useColorModeValue('gray.600', 'gray.400');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -38,16 +46,22 @@ const Register = () => {
   return (
     <Container maxW="sm" py={10}>
       <VStack spacing={8} align="stretch">
-        <Heading size="lg">Register</Heading>
+        <VStack spacing={2}>
+          <Heading size="lg" textAlign="center">Create Account</Heading>
+          <Text color={textColor} textAlign="center">
+            Join MoneyTrail and take control of your finances
+          </Text>
+        </VStack>
         
         <form onSubmit={handleSubmit}>
           <VStack spacing={4}>
             <FormControl isRequired>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Full Name</FormLabel>
               <Input
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
+                placeholder="Enter your full name"
               />
             </FormControl>
             
@@ -58,6 +72,7 @@ const Register = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
+                placeholder="Enter your email"
               />
             </FormControl>
             
@@ -68,6 +83,7 @@ const Register = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
+                placeholder="Create a strong password"
               />
             </FormControl>
             
@@ -76,11 +92,34 @@ const Register = () => {
               colorScheme="blue"
               width="full"
               mt={4}
+              size="lg"
             >
-              Register
+              Create Account
             </Button>
           </VStack>
         </form>
+
+        <VStack spacing={4}>
+          <Divider />
+          <HStack justify="center" spacing={1}>
+            <Text color={textColor} fontSize="sm">
+              Already have an account?
+            </Text>
+            <Link
+              as={RouterLink}
+              to="/login"
+              color={linkColor}
+              fontWeight="semibold"
+              fontSize="sm"
+              _hover={{
+                textDecoration: 'underline',
+                color: useColorModeValue('blue.700', 'blue.300')
+              }}
+            >
+              Sign in
+            </Link>
+          </HStack>
+        </VStack>
       </VStack>
     </Container>
   );
