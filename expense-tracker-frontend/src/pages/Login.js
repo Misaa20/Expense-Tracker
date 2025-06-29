@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Box,
@@ -11,7 +11,11 @@ import {
   VStack,
   Text,
   Heading,
-  useToast
+  useToast,
+  HStack,
+  Link,
+  Divider,
+  useColorModeValue
 } from '@chakra-ui/react';
 
 const Login = () => {
@@ -22,6 +26,9 @@ const Login = () => {
   const { login, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
+
+  const linkColor = useColorModeValue('blue.600', 'blue.400');
+  const textColor = useColorModeValue('gray.600', 'gray.400');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -41,10 +48,15 @@ const Login = () => {
   return (
     <Container maxW="sm" py={10}>
       <VStack spacing={8} align="stretch">
-        <Heading size="lg">Login</Heading>
+        <VStack spacing={2}>
+          <Heading size="lg" textAlign="center">Welcome Back</Heading>
+          <Text color={textColor} textAlign="center">
+            Sign in to your MoneyTrail account
+          </Text>
+        </VStack>
         
         {error && (
-          <Text color="red.500" mb={2}>
+          <Text color="red.500" textAlign="center" fontSize="sm">
             {error}
           </Text>
         )}
@@ -58,6 +70,7 @@ const Login = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
+                placeholder="Enter your email"
               />
             </FormControl>
             
@@ -68,6 +81,7 @@ const Login = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
+                placeholder="Enter your password"
               />
             </FormControl>
             
@@ -76,11 +90,34 @@ const Login = () => {
               colorScheme="blue"
               width="full"
               mt={4}
+              size="lg"
             >
-              Login
+              Sign In
             </Button>
           </VStack>
         </form>
+
+        <VStack spacing={4}>
+          <Divider />
+          <HStack justify="center" spacing={1}>
+            <Text color={textColor} fontSize="sm">
+              Don't have an account?
+            </Text>
+            <Link
+              as={RouterLink}
+              to="/register"
+              color={linkColor}
+              fontWeight="semibold"
+              fontSize="sm"
+              _hover={{
+                textDecoration: 'underline',
+                color: useColorModeValue('blue.700', 'blue.300')
+              }}
+            >
+              Sign up
+            </Link>
+          </HStack>
+        </VStack>
       </VStack>
     </Container>
   );

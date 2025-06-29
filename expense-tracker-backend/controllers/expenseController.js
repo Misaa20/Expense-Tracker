@@ -1,5 +1,6 @@
 const Expense = require('../models/Expense');
 const Category = require('../models/Category');
+const mongoose = require('mongoose');
 
 // @desc    Get all expenses for user
 // @route   GET /api/expenses
@@ -59,6 +60,42 @@ const getExpenses = async (req, res) => {
   }
 };
 
+// @desc    Get single expense
+// @route   GET /api/expenses/:id
+// @access  Private
+const getExpense = async (req, res) => {
+  try {
+    const expense = await Expense.findById(req.params.id)
+      .populate('category', 'name color icon');
+
+    if (!expense) {
+      return res.status(404).json({
+        success: false,
+        message: 'Expense not found'
+      });
+    }
+
+    // Check if expense belongs to user
+    if (expense.user.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to access this expense'
+      });
+    }
+
+    res.json({
+      success: true,
+      expense
+    });
+  } catch (error) {
+    console.error('Get expense error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 // @desc    Create new expense
 // @route   POST /api/expenses
 // @access  Private
@@ -79,6 +116,106 @@ const createExpense = async (req, res) => {
     });
   } catch (error) {
     console.error('Create expense error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// @desc    Update expense
+// @route   PUT /api/expenses/:id
+// @access  Private
+const updateExpense = async (req, res) => {
+  try {
+    let expense = await Expense.findById(req.params.id);
+
+    if (!expense) {
+      return res.status(404).json({
+        success: false,
+        message: 'Expense not found'
+      });
+    }
+
+    // Check if expense belongs to user
+    if (expense.user.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this expense'
+      });
+    }
+
+    expense = await Expense.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true
+      }
+    ).populate('category', 'name color icon');
+
+    res.json({
+      success: true,
+      message: 'Expense updated successfully',
+      expense
+    });
+  } catch (error) {
+    console.error('Update expense error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// @desc    Delete expense
+// @route   DELETE /api/expenses/:id
+// @access  Private
+const deleteExpense = async (req, res) => {
+  try {
+    console.log('Delete request received for ID:', req.params.id);
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      console.log('Invalid ObjectId format:', req.params.id);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid expense ID format'
+      });
+    }
+
+    const expense = await Expense.findById(req.params.id);
+    console.log('Found expense:', expense);
+
+    if (!expense) {
+      console.log('Expense not found for ID:', req.params.id);
+      return res.status(404).json({
+        success: false,
+        message: 'Expense not found'
+      });
+    }
+
+    // Check if expense belongs to user
+    console.log('Expense user ID:', expense.user.toString());
+    console.log('Request user ID:', req.user.id);
+    
+    if (expense.user.toString() !== req.user.id) {
+      console.log('User not authorized to delete this expense');
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to delete this expense'
+      });
+    }
+
+    await expense.deleteOne();
+    console.log('Expense deleted successfully');
+
+    res.json({
+      success: true,
+      message: 'Expense deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete expense error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -190,6 +327,9 @@ const getExpenseStats = async (req, res) => {
 
 module.exports = {
   getExpenses,
+  getExpense,
   createExpense,
+  updateExpense,
+  deleteExpense,
   getExpenseStats
 };

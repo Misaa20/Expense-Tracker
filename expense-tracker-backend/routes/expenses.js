@@ -1,5 +1,12 @@
 const express = require('express');
-const { getExpenses, createExpense, getExpenseStats } = require('../controllers/expenseController');
+const { 
+  getExpenses, 
+  getExpense,
+  createExpense, 
+  updateExpense,
+  deleteExpense,
+  getExpenseStats 
+} = require('../controllers/expenseController');
 const { protect } = require('../middleware/auth');
 const { validateBody, expenseSchema } = require('../middleware/validation');
 
@@ -12,5 +19,10 @@ router.route('/')
   .post(validateBody(expenseSchema), createExpense);
 
 router.get('/stats', getExpenseStats);
+
+router.route('/:id')
+  .get(getExpense)
+  .put(validateBody(expenseSchema), updateExpense)
+  .delete(deleteExpense);
 
 module.exports = router;

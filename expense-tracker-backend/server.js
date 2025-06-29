@@ -6,6 +6,8 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 // Add this line with other route imports
 const expenseRoutes = require('./routes/expenses');
+const budgetRoutes = require('./routes/budgets');
+const categoryRoutes = require('./routes/categories');
 
 
 require('dotenv').config();
@@ -24,7 +26,6 @@ const app = express();
 // Security middleware
 app.use(helmet());
 // Add this line with other route uses
-app.use('/api/expenses', expenseRoutes);
 
 // CORS configuration
 app.use(cors({
@@ -35,7 +36,7 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 1000 // limit each IP to 100 requests per windowMs
 });
 app.use('/api/', limiter);
 
@@ -62,6 +63,10 @@ app.get('/api/health', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+// Add this line with other route uses
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/budgets', budgetRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // Handle undefined routes
 app.all('*', (req, res) => {
