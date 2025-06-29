@@ -6,11 +6,16 @@ const AuthContext = createContext();
 const authReducer = (state, action) => {
   switch (action.type) {
     case 'LOGIN_START':
+    case 'REGISTER_START':
       return { ...state, loading: true, error: null };
     case 'LOGIN_SUCCESS':
+    case 'REGISTER_SUCCESS':
       return { ...state, loading: false, user: action.payload, isAuthenticated: true };
     case 'LOGIN_FAILURE':
+    case 'REGISTER_FAILURE':
       return { ...state, loading: false, error: action.payload, isAuthenticated: false };
+    case 'UPDATE_USER':
+      return { ...state, user: action.payload };
     case 'LOGOUT':
       return { ...state, user: null, isAuthenticated: false, token: null };
     case 'SET_TOKEN':
@@ -49,9 +54,33 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', token);
       dispatch({ type: 'LOGIN_SUCCESS', payload: user });
       dispatch({ type: 'SET_TOKEN', payload: token });
+      
+      return { success: true };
     } catch (error) {
       dispatch({ type: 'LOGIN_FAILURE', payload: error.response?.data?.message || 'Login failed' });
+      return { success: false, error: error.response?.data?.message || 'Login failed' };
     }
+  };
+
+  const register = async (userData) => {
+    dispatch({ type: 'REGISTER_START' });
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/register', userData);
+      const { token, user } = response.data;
+      
+      localStorage.setItem('token', token);
+      dispatch({ type: 'REGISTER_SUCCESS', payload: user });
+      dispatch({ type: 'SET_TOKEN', payload: token });
+      
+      return { success: true };
+    } catch (error) {
+      dispatch({ type: 'REGISTER_FAILURE', payload: error.response?.data?.message || 'Registration failed' });
+      return { success: false, error: error.response?.data?.message || 'Registration failed' };
+    }
+  };
+
+  const updateUser = (userData) => {
+    dispatch({ type: 'UPDATE_USER', payload: userData });
   };
 
   const logout = () => {
@@ -63,6 +92,8 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider value={{
       ...state,
       login,
+      register,
+      updateUser,
       logout
     }}>
       {children}
