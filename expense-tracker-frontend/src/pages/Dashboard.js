@@ -20,6 +20,8 @@ import {
   HStack,
   Divider,
   useColorModeValue,
+  Button,
+  ButtonGroup,
 } from '@chakra-ui/react';
 import Header from '../components/common/Header';
 import Sidebar from '../components/common/Sidebar';
@@ -30,16 +32,20 @@ import { budgetService } from '../services/budgets';
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
+  const [chartLoading, setChartLoading] = useState(false);
   const [expenses, setExpenses] = useState([]);
   const [statsData, setStatsData] = useState(null);
   const [budgets, setBudgets] = useState([]);
   const [recentExpenses, setRecentExpenses] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState('month');
   const toast = useToast();
 
-  // Theme-aware colors
+  // Theme-aware colors - moved to top level
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const textColor = useColorModeValue('gray.800', 'white');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
+  const categoryCardBg = useColorModeValue('gray.100', 'gray.700');
+  const categoryCardBorder = useColorModeValue('gray.200', 'gray.600');
 
   // Fetch all dashboard data
   useEffect(() => {
@@ -49,8 +55,8 @@ const Dashboard = () => {
         console.log('Fetching dashboard data...');
         
         const [expensesResponse, statsResponse, budgetsResponse] = await Promise.all([
-          expenseService.getExpenses({ limit: 100 }), // Get more expenses for better analytics
-          expenseService.getExpenseStats('month'),
+          expenseService.getExpenses({ limit: 100 }),
+          expenseService.getExpenseStats(selectedPeriod),
           budgetService.getBudgets()
         ]);
 
@@ -85,40 +91,96 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
-  }, [toast]);
+  }, [toast, selectedPeriod]);
 
-  // Process expense data for charts
+  // Function to refresh chart data with different periods
+  const refreshChartData = async (period) => {
+    setChartLoading(true);
+    setSelectedPeriod(period);
+    try {
+      console.log(`Fetching stats for period: ${period}`);
+      const statsResponse = await expenseService.getExpenseStats(period);
+      console.log('Stats response:', statsResponse);
+      setStatsData(statsResponse.stats);
+      
+      toast({
+        title: 'Chart Updated',
+        description: `Showing expenses for ${period}`,
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error refreshing chart data:', error);
+      toast({
+        title: 'Error refreshing chart',
+        description: 'Could not update chart data.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setChartLoading(false);
+    }
+  };
+
+  // Process expense data for charts with enhanced colors and formatting
   const getExpenseChartData = () => {
+    console.log('Processing chart data:', statsData);
+    
     if (!statsData?.categoryBreakdown || statsData.categoryBreakdown.length === 0) {
+      console.log('No category breakdown data available');
       return {
-        labels: ['No Data'],
+        labels: ['No Expenses'],
         datasets: [{
-          label: 'Expenses',
-          data: [1],
-          backgroundColor: ['rgba(200, 200, 200, 0.8)'],
+          label: 'Expenses ($)',
+          data: [0],
+          backgroundColor: ['rgba(200, 200, 200, 0.6)'],
+          borderColor: ['rgba(200, 200, 200, 1)'],
+          borderWidth: 1,
         }]
       };
     }
 
-    const colors = [
-      'rgba(255, 99, 132, 0.8)',
-      'rgba(54, 162, 235, 0.8)',
-      'rgba(255, 205, 86, 0.8)',
-      'rgba(75, 192, 192, 0.8)',
-      'rgba(153, 102, 255, 0.8)',
-      'rgba(255, 159, 64, 0.8)',
-      'rgba(201, 203, 207, 0.8)',
-      'rgba(255, 99, 255, 0.8)',
+    // Enhanced color palette
+    const colorPalette = [
+      { bg: 'rgba(255, 99, 132, 0.8)', border: 'rgba(255, 99, 132, 1)' },
+      { bg: 'rgba(54, 162, 235, 0.8)', border: 'rgba(54, 162, 235, 1)' },
+      { bg: 'rgba(255, 205, 86, 0.8)', border: 'rgba(255, 205, 86, 1)' },
+      { bg: 'rgba(75, 192, 192, 0.8)', border: 'rgba(75, 192, 192, 1)' },
+      { bg: 'rgba(153, 102, 255, 0.8)', border: 'rgba(153, 102, 255, 1)' },
+      { bg: 'rgba(255, 159, 64, 0.8)', border: 'rgba(255, 159, 64, 1)' },
+      { bg: 'rgba(199, 199, 199, 0.8)', border: 'rgba(199, 199, 199, 1)' },
+      { bg: 'rgba(83, 102, 255, 0.8)', border: 'rgba(83, 102, 255, 1)' },
     ];
 
-    return {
-      labels: statsData.categoryBreakdown.map(cat => cat.name),
+    const backgroundColors = [];
+    const borderColors = [];
+    
+    statsData.categoryBreakdown.forEach((cat, index) => {
+      if (cat.color) {
+        backgroundColors.push(cat.color + 'CC'); // Add transparency
+        borderColors.push(cat.color);
+      } else {
+        const colorIndex = index % colorPalette.length;
+        backgroundColors.push(colorPalette[colorIndex].bg);
+        borderColors.push(colorPalette[colorIndex].border);
+      }
+    });
+
+    const chartData = {
+      labels: statsData.categoryBreakdown.map(cat => cat.name || 'Unknown'),
       datasets: [{
-        label: 'Expenses',
-        data: statsData.categoryBreakdown.map(cat => cat.total),
-        backgroundColor: colors.slice(0, statsData.categoryBreakdown.length),
+        label: 'Expenses ($)',
+        data: statsData.categoryBreakdown.map(cat => parseFloat(cat.total).toFixed(2)),
+        backgroundColor: backgroundColors,
+        borderColor: borderColors,
+        borderWidth: 2,
       }]
     };
+
+    console.log('Generated chart data:', chartData);
+    return chartData;
   };
 
   // Calculate dynamic statistics
@@ -201,14 +263,40 @@ const Dashboard = () => {
             <Text fontSize="2xl" fontWeight="bold" color={textColor}>
               Dashboard
             </Text>
-            <Badge colorScheme="green" p={2} borderRadius="md">
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </Badge>
+            <VStack align="end" spacing={2}>
+              <Badge colorScheme="green" p={2} borderRadius="md">
+                {new Date().toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </Badge>
+              {/* Period Selection */}
+              <ButtonGroup size="sm" isAttached variant="outline">
+                <Button
+                  colorScheme={selectedPeriod === 'week' ? 'blue' : 'gray'}
+                  onClick={() => refreshChartData('week')}
+                  isLoading={chartLoading && selectedPeriod === 'week'}
+                >
+                  Week
+                </Button>
+                <Button
+                  colorScheme={selectedPeriod === 'month' ? 'blue' : 'gray'}
+                  onClick={() => refreshChartData('month')}
+                  isLoading={chartLoading && selectedPeriod === 'month'}
+                >
+                  Month
+                </Button>
+                <Button
+                  colorScheme={selectedPeriod === 'year' ? 'blue' : 'gray'}
+                  onClick={() => refreshChartData('year')}
+                  isLoading={chartLoading && selectedPeriod === 'year'}
+                >
+                  Year
+                </Button>
+              </ButtonGroup>
+            </VStack>
           </HStack>
 
           {expenses.length === 0 && (
@@ -243,12 +331,24 @@ const Dashboard = () => {
           <Grid templateColumns={{ base: "1fr", xl: "repeat(3, 1fr)" }} gap={6} mb={6}>
             {/* Bar Chart */}
             <GridItem colSpan={{ base: 1, xl: 1 }}>
-              <ExpenseChart data={expenseData} type="bar" />
+              <ExpenseChart 
+                data={expenseData} 
+                type="bar" 
+                loading={chartLoading}
+                period={selectedPeriod}
+                onPeriodChange={refreshChartData}
+              />
             </GridItem>
 
             {/* Doughnut Chart */}
             <GridItem colSpan={{ base: 1, xl: 1 }}>
-              <ExpenseChart data={expenseData} type="doughnut" />
+              <ExpenseChart 
+                data={expenseData} 
+                type="doughnut" 
+                loading={chartLoading}
+                period={selectedPeriod}
+                onPeriodChange={refreshChartData}
+              />
             </GridItem>
 
             {/* Recent Expenses */}
@@ -291,6 +391,40 @@ const Dashboard = () => {
               </Card>
             </GridItem>
           </Grid>
+
+          {/* Category Breakdown Details */}
+          {statsData?.categoryBreakdown && statsData.categoryBreakdown.length > 0 && (
+            <Card mb={6}>
+              <Text fontSize="lg" fontWeight="semibold" mb={4} color={textColor}>
+                Category Breakdown ({selectedPeriod})
+              </Text>
+              <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
+                {statsData.categoryBreakdown.map((category, index) => (
+                  <Box 
+                    key={category._id || index} 
+                    p={4} 
+                    borderRadius="md" 
+                    bg={categoryCardBg}
+                    border="1px solid"
+                    borderColor={categoryCardBorder}
+                  >
+                    <Flex justify="space-between" align="center" mb={2}>
+                      <Text fontWeight="medium" color={textColor}>
+                        {category.name}
+                      </Text>
+                      <Badge colorScheme="blue">{category.count} items</Badge>
+                    </Flex>
+                    <Text fontSize="xl" fontWeight="bold" color="blue.500">
+                      ${category.total.toFixed(2)}
+                    </Text>
+                    <Text fontSize="sm" color={mutedTextColor}>
+                      {((category.total / (statsData.totalExpenses || 1)) * 100).toFixed(1)}% of total
+                    </Text>
+                  </Box>
+                ))}
+              </Grid>
+            </Card>
+          )}
 
           {/* Budget Overview */}
           {budgets.length > 0 && (
